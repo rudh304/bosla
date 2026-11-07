@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>بوصلة | مرشدك للمسار الوظيفي</title>
+  <meta name="description" content="بوصلة: وكيل ذكاء اصطناعي لإرشاد طلاب نظم المعلومات الإدارية إلى المسار الوظيفي المناسب">
+  <meta name="theme-color" content="#0F2A44">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='21' fill='%230F2A44' stroke='%23D4A537' stroke-width='3'/%3E%3Cpath d='M24 8l5 16h-10z' fill='%23D4A537'/%3E%3Cpath d='M24 40l-5-16h10z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M24 8l5.5 16h-11z" fill="#D4A537"/>
+      <path d="M24 40l-5.5-16h11z" fill="#fff"/>
+      <circle cx="24" cy="24" r="2.6" fill="#0F2A44"/>
+    </svg>
+    <h1>بوصلة</h1>
+    <p class="tagline">وكيل ذكاء اصطناعي لإرشاد طلاب نظم المعلومات الإدارية إلى المسار الوظيفي المناسب</p>
+    <button id="new-chat" class="new-chat" type="button" aria-label="محادثة جديدة">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span>محادثة جديدة</span>
+    </button>
+  </header>
+
+  <main id="chat" class="chat" aria-live="polite" aria-label="المحادثة"></main>
+
+  <form id="composer" class="composer" autocomplete="off">
+    <input id="input" type="text" placeholder="اكتب رسالتك…" aria-label="اكتب رسالتك" maxlength="500">
+    <button id="send" type="submit" aria-label="إرسال">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12L4 4l3 8-3 8z" fill="currentColor" transform="rotate(180 12 12)"/></svg>
+    </button>
+  </form>
+  <footer class="foot">مشروع مقرر نظم معلومات إدارية متقدمة – جامعة الطائف</footer>
+
+  <noscript><p class="noscript">يتطلب "بوصلة" تفعيل JavaScript في المتصفح.</p></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
