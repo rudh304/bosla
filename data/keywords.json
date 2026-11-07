@@ -213,10 +213,12 @@
     },
     {
       "label": "إدارة مشاريع",
+      "en": "Project management",
       "keys": ["اداره مشاريع", "اداره المشاريع", "project management"]
     },
     {
       "label": "لغة إنجليزية",
+      "en": "English",
       "keys": ["انجليزي", "الانجليزي", "انجليزيه", "الانجليزيه", "english"]
     },
     {
@@ -245,10 +247,12 @@
     },
     {
       "label": "إحصاء",
+      "en": "Statistics",
       "keys": ["احصاء", "statistics"]
     },
     {
       "label": "أمن سيبراني",
+      "en": "Cybersecurity",
       "keys": ["امن سيبراني", "الامن السيبراني", "cyber"]
     }
   ],

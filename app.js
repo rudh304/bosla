@@ -1,15 +1,30 @@
 // واجهة المحادثة: تعرض رسائل الوكيل وأزرارها، وترسل مدخلات الطالب إلى آلة الحالات (bot.js).
 import { createBot, loadData } from './bot.js';
+import { STRINGS } from './i18n.js';
 
 const params = new URLSearchParams(location.search);
 const TYPING_MS = params.has('delay') ? Number(params.get('delay')) : 550;
 
+const root = document.documentElement;
 const chat = document.getElementById('chat');
 const form = document.getElementById('composer');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
+const langBtn = document.getElementById('lang-toggle');
+const themeBtn = document.getElementById('theme-toggle');
+const progress = document.getElementById('progress');
 let bot;
 let busy = false;
+let data;
+
+// التفضيلات تُحفظ في المتصفح فقط، والصفحة تعمل بدونها
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* تجاهل */ } }
+};
+
+let lang = params.get('lang') === 'en' || params.get('lang') === 'ar' ? params.get('lang') : (store.get('bosla-lang') === 'en' ? 'en' : 'ar');
+const ui = () => STRINGS[lang].ui;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const scrollDown = () => { chat.scrollTop = chat.scrollHeight; };
@@ -20,11 +35,58 @@ function setBusy(v) {
   sendBtn.disabled = v;
 }
 
+// ---------- اللغة ----------
+function applyLang() {
+  const u = ui();
+  root.lang = lang;
+  root.dir = STRINGS[lang].dir;
+  document.title = u.title;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = u[el.dataset.i18n]; });
+  input.placeholder = u.placeholder;
+  input.setAttribute('aria-label', u.placeholder);
+  sendBtn.setAttribute('aria-label', u.send);
+  chat.setAttribute('aria-label', u.brand);
+  langBtn.querySelector('.lang-code').textContent = u.langBtn;
+  langBtn.setAttribute('aria-label', u.langLabel);
+  langBtn.title = u.langLabel;
+  updateThemeLabel();
+}
+
+// ---------- الوضع الساطع والداكن ----------
+const systemDark = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const isDark = () => (root.dataset.theme ? root.dataset.theme === 'dark' : systemDark());
+
+function updateThemeLabel() {
+  const label = isDark() ? ui().themeLight : ui().themeDark;
+  themeBtn.setAttribute('aria-label', label);
+  themeBtn.title = label;
+  themeBtn.setAttribute('aria-pressed', String(isDark()));
+  document.querySelector('meta[name="theme-color"]').content = isDark() ? '#0A1522' : '#0F2A44';
+}
+
+themeBtn.addEventListener('click', () => {
+  const next = isDark() ? 'light' : 'dark';
+  root.dataset.theme = next;
+  store.set('bosla-theme', next);
+  updateThemeLabel();
+});
+
+// ---------- شريط التقدم ----------
+function updateProgress(m) {
+  if (m.progress) {
+    progress.hidden = false;
+    progress.querySelector('.progress-fill').style.width = `${(m.progress / 5) * 100}%`;
+    progress.querySelector('.progress-text').textContent = ui().progress(m.progress);
+  } else if (['results', 'tiebreak', 'resolved', 'welcome'].includes(m.tag)) {
+    progress.hidden = true;
+  }
+}
+
 /** تعطيل أزرار الرسائل السابقة حتى لا تُستخدم بعد تقدّم المحادثة */
 function freezeOld() {
   chat.querySelectorAll('.msg.bot.live').forEach(m => {
     m.classList.remove('live');
-    m.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    m.querySelectorAll('.quick button, .rating-row button').forEach(b => { b.disabled = true; });
   });
 }
 
@@ -65,7 +127,7 @@ function renderRatings(el, ratings) {
         chosen[r.crit] = v;
         opts.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
         if (Object.keys(chosen).length === ratings.length) {
-          const shown = ratings.map(x => `${x.label}: ${chosen[x.crit]}`).join('، ');
+          const shown = ratings.map(x => `${x.label}: ${chosen[x.crit]}`).join(STRINGS[lang].list);
           send({ action: 'rate', payload: { ...chosen } }, shown);
         }
       });
@@ -76,7 +138,7 @@ function renderRatings(el, ratings) {
   }
   const hint = document.createElement('p');
   hint.className = 'rating-hint';
-  hint.textContent = 'اختر درجة لكل معيار، أو اكتب إجابتك بأسلوبك.';
+  hint.textContent = ui().ratingHint;
   box.append(hint);
   el.append(box);
 }
@@ -94,8 +156,7 @@ function renderButtons(el, buttons) {
       if (btn.append) {
         // اقتراحات المهارات: تُضاف إلى حقل الكتابة ليرسلها الطالب مجتمعة
         b.classList.toggle('selected');
-        const picked = [...box.querySelectorAll('button.selected')].map(x => x.textContent);
-        input.value = picked.join('، ');
+        input.value = [...box.querySelectorAll('button.selected')].map(x => x.textContent).join(STRINGS[lang].list);
         input.focus();
         return;
       }
@@ -106,10 +167,37 @@ function renderButtons(el, buttons) {
   el.append(box);
 }
 
+/** زر نسخ ملخص النتيجة (يستخدم مشاركة الجوال إن توفرت) */
+function renderCopy(bubble) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'copy';
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg><span></span>';
+  const label = b.querySelector('span');
+  label.textContent = ui().copy;
+  const summary = bot.summary();
+  b.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = summary;
+      document.body.append(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch { /* تجاهل */ }
+      ta.remove();
+    }
+    b.classList.add('done');
+    label.textContent = ui().copied;
+    setTimeout(() => { b.classList.remove('done'); label.textContent = ui().copy; }, 2000);
+  });
+  bubble.append(b);
+}
+
 async function addBot(m) {
   const typing = document.createElement('div');
   typing.className = 'msg bot typing';
-  typing.innerHTML = '<div class="bubble"><span class="dots"><i></i><i></i><i></i></span> يكتب…</div>';
+  typing.innerHTML = `<div class="bubble"><span class="dots"><i></i><i></i><i></i></span> ${ui().typing}</div>`;
   chat.append(typing);
   scrollDown();
   await sleep(TYPING_MS);
@@ -122,9 +210,11 @@ async function addBot(m) {
   bubble.className = 'bubble';
   bubble.innerHTML = m.html; // HTML مبني في bot.js مع تهريب كل النصوص
   if (m.ratings && m.ratings.length) renderRatings(bubble, m.ratings);
+  if (m.share) renderCopy(bubble);
   el.append(bubble);
   if (m.buttons && m.buttons.length) renderButtons(el, m.buttons);
   chat.append(el);
+  updateProgress(m);
   scrollDown();
 }
 
@@ -135,10 +225,18 @@ async function show(messages) {
   setBusy(false);
 }
 
-async function send(input, label) {
+async function send(inp, label) {
   if (busy) return;
-  addUser(label ?? input.text);
-  await show(bot.handle(input));
+  addUser(label ?? inp.text);
+  await show(bot.handle(inp));
+}
+
+function restart() {
+  chat.innerHTML = '';
+  input.value = '';
+  progress.hidden = true;
+  bot = createBot(data, { lang });
+  return show(bot.start());
 }
 
 form.addEventListener('submit', e => {
@@ -149,24 +247,28 @@ form.addEventListener('submit', e => {
   send({ text });
 });
 
-document.getElementById('new-chat').addEventListener('click', () => {
+document.getElementById('new-chat').addEventListener('click', () => { if (!busy) restart(); });
+
+// تبديل اللغة يبدأ محادثة جديدة باللغة المختارة
+langBtn.addEventListener('click', () => {
   if (busy) return;
-  chat.innerHTML = '';
-  input.value = '';
-  bot = createBot(data);
-  show(bot.start());
+  lang = lang === 'ar' ? 'en' : 'ar';
+  store.set('bosla-lang', lang);
+  applyLang();
+  restart();
 });
 
-let data;
+applyLang();
+if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', updateThemeLabel);
+
 try {
   data = await loadData(f => fetch(f).then(r => {
     if (!r.ok) throw new Error(f);
     return r.json();
   }));
-  bot = createBot(data);
-  await show(bot.start());
+  await restart();
   document.body.dataset.ready = '1';
 } catch (err) {
-  chat.innerHTML = '<div class="msg bot"><div class="bubble"><p>تعذّر تحميل قاعدة المعرفة. حدّث الصفحة من فضلك.</p></div></div>';
+  chat.innerHTML = `<div class="msg bot"><div class="bubble"><p>${ui().loadError}</p></div></div>`;
   console.error(err);
 }

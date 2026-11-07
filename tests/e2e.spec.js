@@ -218,3 +218,59 @@ test('لا تمرير أفقي على شاشة الجوال', async ({ page }) =
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test('أيقونة اللغة: تبدّل إلى الإنجليزية (LTR) وتبقى بعد التحديث، ثم تعود للعربية', async ({ page }) => {
+  await open(page);
+  await page.click('#lang-toggle');
+  await page.waitForFunction(() => document.documentElement.dir === 'ltr' && document.querySelectorAll('.msg.bot:not(.typing)').length === 1 && document.body.dataset.busy === '0');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('h1')).toHaveText('Bosla');
+  await expect(last(page)).toContainText('Where shall we start?');
+  await expect(page.locator('#input')).toHaveAttribute('placeholder', 'Type your message…');
+  const m = await say(page, 'compare business analyst and project manager');
+  await expect(m.locator('table.compare thead th')).toHaveText(['Item', 'Business Analyst', 'IT Project Manager']);
+  await page.reload();
+  await page.waitForSelector('body[data-ready="1"]');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await page.click('#lang-toggle');
+  await page.waitForFunction(() => document.documentElement.dir === 'rtl' && document.body.dataset.busy === '0');
+  await expect(last(page)).toContainText('بماذا نبدأ؟');
+});
+
+test('أيقونة الوضع: تبدّل بين الساطع والداكن وتبقى بعد التحديث', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await open(page);
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const light = await bg();
+  await page.click('#theme-toggle');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.waitForTimeout(350);
+  expect(await bg()).not.toBe(light);
+  await expect(page.locator('#theme-toggle')).toHaveAttribute('aria-pressed', 'true');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.click('#theme-toggle');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
+test('شريط التقدّم يتبع أسئلة الاستبيان، وزر نسخ النتيجة يعمل', async ({ page, context }, testInfo) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await open(page);
+  await click(page, 'اكتشف مساري');
+  await expect(page.locator('#progress')).toBeVisible();
+  await expect(page.locator('.progress-text')).toHaveText('السؤال 1 من 5');
+  await click(page, 'سنة ثالثة');
+  await expect(page.locator('.progress-text')).toHaveText('السؤال 2 من 5');
+  await rate(page, { 1: 1, 2: 2 });
+  await rate(page, { 3: 5, 4: 5 });
+  await rate(page, { 5: 4, 6: 3, 7: 2 });
+  await expect(page.locator('.progress-text')).toHaveText('السؤال 5 من 5');
+  await click(page, 'لا شيء بعد');
+  await expect(page.locator('#progress')).toBeHidden();
+  const copy = last(page).locator('.copy');
+  await copy.click();
+  await expect(copy).toContainText('تم النسخ');
+  await page.click('#theme-toggle');
+  await page.waitForTimeout(900);
+  await snap(page, 'dark-results', testInfo);
+});

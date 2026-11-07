@@ -1,0 +1,32 @@
+{
+  "source": "English translation of bosla_questionnaire.docx (the Arabic original is the reference)",
+  "purpose": "The \"Bosla\" agent uses this questionnaire to collect the student's information before calculating their match with the career paths. It produces: scores for the seven criteria (1 to 5), the study level, and the student's current skills.",
+  "scale": [
+    { "score": 1, "meaning": "I don't like it / weak at it" },
+    { "score": 2, "meaning": "Below average" },
+    { "score": 3, "meaning": "Average" },
+    { "score": 4, "meaning": "Good / I like it" },
+    { "score": 5, "meaning": "I love it / strong at it" }
+  ],
+  "questions": [
+    { "id": 1, "title": "What is your study level?", "options": [{ "label": "First or second year", "plan": "Beginner" }, { "label": "Third year", "plan": "Beginner" }, { "label": "Fourth year or graduate", "plan": "Advanced" }] },
+    { "id": 2, "title": "Rate yourself from 1 to 5 in:", "criteria": [{ "label": "Programming and technology", "criterion": 1 }, { "label": "Analysis and numbers", "criterion": 2 }] },
+    { "id": 3, "title": "Rate yourself from 1 to 5 in:", "criteria": [{ "label": "Communication and presentation", "criterion": 3 }, { "label": "Leadership and task organization", "criterion": 4 }] },
+    { "id": 4, "title": "Rate yourself from 1 to 5 in:", "criteria": [{ "label": "Understanding business and how companies work", "criterion": 5 }, { "label": "Precision and compliance with regulations and policies", "criterion": 6 }, { "label": "Creativity and new ideas", "criterion": 7 }] },
+    { "id": 5, "title": "What tools or skills do you know right now?", "hint": "Example: Excel, SQL, Python, Power BI, project management, English. Your answer is used in the gap analysis." }
+  ],
+  "rules": [
+    { "title": "Rule 1: Don't repeat what is known", "text": "If the student mentioned something earlier, they are not asked about it again, and are asked only about missing information." },
+    { "title": "Rule 2: Turn descriptions into numbers and announce them", "text": "If the student describes their skill in words instead of a number, the agent estimates the score and announces it so the student can correct it. The agent also applies this rule to equivalent descriptions in spoken dialects." },
+    { "title": "Rule 3: Missing answers", "text": "If the student doesn't answer a question, it is asked again only once. If there is still no answer, the score is set to 3 (neutral), and this is stated explicitly in the result." },
+    { "title": "Rule 4: Numbers outside the scale", "text": "If the student writes a number above 5 or below 1, it is changed to the nearest number on the scale (5 or 1), and the student is asked to confirm." }
+  ],
+  "descriptionScale": [
+    { "description": "Doesn't like it at all / weak at it", "score": 1 },
+    { "description": "Likes it a little / below average", "score": 2 },
+    { "description": "Ordinary / average", "score": 3 },
+    { "description": "Likes it / good", "score": 4 },
+    { "description": "Passionate about it / very strong at it", "score": 5 }
+  ],
+  "announceFormat": "I estimated your [criterion] score as [number]; feel free to correct it."
+}
