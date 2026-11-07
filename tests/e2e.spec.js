@@ -10,7 +10,7 @@ const replied = (page, n) => page.waitForFunction(
   n => document.querySelectorAll('.msg.bot:not(.typing)').length > n && document.body.dataset.busy === '0', n);
 
 async function open(page) {
-  await page.goto('/?delay=40');
+  await page.goto('./?delay=40');
   await page.waitForSelector('body[data-ready="1"]');
 }
 async function say(page, text) {
@@ -200,7 +200,7 @@ test('10) طلب غامض يبدأ الاستبيان، ثم "أبغى محلل 
 });
 
 test('محادثة جديدة تعيد كل شيء من البداية، ومؤشر "يكتب…" يظهر قبل الرد', async ({ page }) => {
-  await page.goto('/?delay=400');
+  await page.goto('./?delay=400');
   await page.waitForSelector('body[data-ready="1"]');
   await page.fill('#input', 'ما المسارات المتاحة؟');
   await page.press('#input', 'Enter');
